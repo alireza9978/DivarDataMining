@@ -1,6 +1,7 @@
 import random
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from dateutil.parser import parse
 
@@ -23,6 +24,8 @@ def fix_year(temp_df: pd.DataFrame):
 def categorize(temp_df: pd.DataFrame):
     def categorize_inner(inner_df: pd.DataFrame, name: str):
         inner_df[name] = inner_df[name].astype('category')
+        converting_map = dict(enumerate(main_df[name].cat.categories))
+        np.save('datasets/converting_map_{}.npy'.format(name), converting_map)
         inner_df[name] = inner_df[name].cat.codes
 
     columns = ['cat1', 'cat2', 'cat3', 'city', 'platform']
@@ -145,4 +148,4 @@ if __name__ == '__main__':
     print("remove other outlier done", main_df.shape)
     main_df = categorize(main_df)
     print("categorize done", main_df.shape)
-    main_df.to_csv("datasets/divar_posts_dataset_cleaned.csv")
+    main_df.to_csv("datasets/divar_posts_dataset_cleaned.csv", index=False)
