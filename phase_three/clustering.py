@@ -5,7 +5,7 @@ import pandas as pd
 from bidi import algorithm as bidialg
 from scipy.cluster.hierarchy import dendrogram
 from sklearn import metrics
-from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.cluster import AgglomerativeClustering, KMeans, DBSCAN, MeanShift
 
 
 def inverse_convert_category(temp_df: pd.DataFrame, columns):
@@ -62,6 +62,7 @@ def one():
         lbl.set_rotation(90)
     plt.tight_layout()
     plt.savefig("./result/divar_city_clustering.jpg")
+    plt.close()
 
 
 def one_v2():
@@ -90,6 +91,7 @@ def one_v2():
         lbl.set_rotation(90)
     plt.tight_layout()
     plt.savefig("./result/divar_city_clustering_v2.jpg")
+    plt.close()
 
 
 def two():
@@ -118,6 +120,7 @@ def two():
         lbl.set_rotation(90)
     plt.tight_layout()
     plt.savefig("./result/digikala_city_clustering.jpg")
+    plt.close()
 
 
 def four():
@@ -136,17 +139,16 @@ def four():
     ]
 
     x_train = temp_df[['price']].to_numpy()
-    x_train_small = np.random.choice(x_train.squeeze(), int(x_train.shape[0] * 0.1)).reshape(-1, 1)
 
     best = None
     best_value = 0
     best_index = -1
     silhouette_scores = []
     for i, model in enumerate(models):
-        y_prediction = model.fit_predict(x_train_small)
+        y_prediction = model.fit_predict(x_train)
         y_set = set(y_prediction)
         if len(y_set) > 1:
-            sil = metrics.silhouette_score(x_train_small, y_prediction, metric='sqeuclidean')
+            sil = metrics.silhouette_score(x_train, y_prediction, metric='sqeuclidean')
             silhouette_scores.append(sil)
             if best is None or sil > best_value:
                 best = model
@@ -163,9 +165,60 @@ def four():
     ax.set_ylabel('silhouette', fontsize=14)
     ax.set_xlabel('number of clusters', fontsize=14)
     plt.savefig("result/silhouette_scores.jpg")
+    plt.close()
 
 
-one()
-one_v2()
-two()
-four()
+def four_v2():
+    temp_df = pd.read_csv("./datasets/divar_posts_dataset_cleaned.csv", low_memory=False)
+    temp_df = temp_df[temp_df.price.notna()]
+
+    names = [
+        "DBSCAN_1",
+        "DBSCAN_2",
+        "DBSCAN_3",
+        "MeanShift",
+    ]
+    models = [
+        DBSCAN(eps=0.1, min_samples=500),
+        DBSCAN(eps=0.2, min_samples=500),
+        DBSCAN(eps=0.1, min_samples=1000),
+        MeanShift(bandwidth=0.2)
+    ]
+
+    x_train = temp_df[['price']].to_numpy()
+
+    best = None
+    best_value = 0
+    best_index = -1
+    silhouette_scores = []
+    silhouette_scores_name = []
+    for i, model in enumerate(models):
+        y_prediction = model.fit_predict(x_train)
+        y_set = set(y_prediction)
+        if len(y_set) > 1:
+            sil = metrics.silhouette_score(x_train, y_prediction, metric='sqeuclidean')
+            silhouette_scores.append(sil)
+            silhouette_scores_name.append(names[i] + "_{}".format(len(y_set)))
+            if best is None or sil > best_value:
+                best = model
+                best_value = sil
+                best_index = i
+        else:
+            print("one cluster for {}".format(names[i]))
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+    ax.plot(list(range(len(silhouette_scores))), silhouette_scores, '#7eb5fc', marker="o", linewidth=0.8)
+    ax.plot([best_index], [silhouette_scores[best_index]], 'r', marker="o", linewidth=2)
+    ax.set_xticks(list(range(len(silhouette_scores))))
+    ax.set_xticklabels(silhouette_scores_name)
+    ax.set_ylabel('silhouette', fontsize=14)
+    ax.set_xlabel('models', fontsize=14)
+    plt.savefig("result/silhouette_scores_v2.jpg")
+    plt.close()
+
+
+# one()
+# one_v2()
+# two()
+# four()
+four_v2()
